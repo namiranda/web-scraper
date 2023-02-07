@@ -8,14 +8,14 @@ const app = express()
 async function scrapeMultiplePages(baseURL) {
     let currentPage = 1;
     let finished = false;
-          const products = []
+    const products = []
 
 
     const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
 
     while (!finished) {
-      await page.goto(`${baseURL}?p=${currentPage}`);
+      await page.goto(`${baseURL}&p=${currentPage}`);
       const html = await page.content();
       const $ = cheerio.load(html);
       
@@ -47,4 +47,4 @@ async function scrapeMultiplePages(baseURL) {
   }
 
   app.listen(PORT, () => console.log(`server running in PORT ${PORT}`))
-  scrapeMultiplePages('https://www.tematika.com/libros');
+  scrapeMultiplePages('https://www.tematika.com/libros?limit=30');
