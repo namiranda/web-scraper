@@ -1,50 +1,34 @@
-const PORT = 8000
+import { scrapeTematika } from './scripts/tematika';
+
+const dotenv = require('dotenv');
 const cheerio = require('cheerio')
 const express = require('express')
 const puppeteer = require('puppeteer')
+const mongoose = require('mongoose');
 
-const app = express()
+dotenv.config();
 
-async function scrapeMultiplePages(baseURL) {
-    let currentPage = 1;
-    let finished = false;
-    const products = []
+const app = express();
 
+mongoose.connect(`mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_URL}`, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
 
-    const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function() {
+  console.log('Connected to MongoDB');
+});
 
-    while (!finished) {
-      await page.goto(`${baseURL}&p=${currentPage}`);
-      const html = await page.content();
-      const $ = cheerio.load(html);
-      
-      // Check if there's a next page link
-      if ($('.next.i-next').length === 0) {
-        finished = true;
-      } else {
-        currentPage++;
-      }
-      
-      // Scrape the data on the current page
+const productSchema = new mongoose.Schema({
+  title: String,
+  author: String,
+  price: String,
+  image: String
+});
 
-      $('.product-information', html).each(function() {
-          const title = $(this).find('.product-name').text()
-          const author = $(this).find('.author').text()
-          const price = $(this).find('.price').text()
-          const image = $(this).prev('.product-image').find('img').attr('src');
+const Product = mongoose.model('Product', productSchema);
 
-          products.push({
-              title,
-              author,
-              price,
-              image
-          })
-      })
-    }
-    console.log(products)
-    await browser.close();
-  }
-
-  app.listen(PORT, () => console.log(`server running in PORT ${PORT}`))
-  scrapeMultiplePages('https://www.tematika.com/libros?limit=30');
+  app.listen(process.env.PORT, () => console.log(`server running in PORT ${process.env.PORT}`))
+scrapeTematika()
